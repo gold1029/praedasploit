@@ -15,7 +15,7 @@ class Metasploit3 < Msf::Auxiliary
     super(
       'Name'        => 'Netopia 3347 Cable Modem Wifi Enumeration',
       'Description' => "This module will extract wep keys and WPA preshared keys",
-      'Author'      => ['PercentX deral_heiland[at]rapid7.com'],
+      'Author'      => ['Deral "PercentX" Heiland'],
       'License'     => MSF_LICENSE
     )
 

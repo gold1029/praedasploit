@@ -1,3 +1,8 @@
+#
+# This module requires Metasploit: http//metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
+##
+
 require 'msf/core'
 
 class Metasploit3 < Msf::Auxiliary
@@ -10,7 +15,7 @@ class Metasploit3 < Msf::Auxiliary
     super(
       'Name'        => 'Ubee DDW3611b Cable Modem Wifi Enumeration',
       'Description' => "This module will extract wep keys and WPA preshared keys",
-      'Author'      => ['PercentX deral_heiland[at]rapid7.com'],
+      'Author'      => ['Deral "PercentX" Heiland'],
       'License'     => MSF_LICENSE
     )
 

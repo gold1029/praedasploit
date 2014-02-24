@@ -15,7 +15,7 @@ class Metasploit3 < Msf::Auxiliary
     super(
       'Name'        => 'Brocade Password Hash Enumeration',
       'Description' => "This module will extract password hashes from Brocade load balancer devices",
-      'Author'      => ['PercentX deral_heiland[at]rapid7.com'],
+      'Author'      => ['Deral "PercentX" Heiland'],
       'License'     => MSF_LICENSE
     )
 
