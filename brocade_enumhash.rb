@@ -44,16 +44,16 @@ class Metasploit3 < Msf::Auxiliary
         @users.each_index do |i|
         credinfo << "#{@users[i]}:#{@hashes[i]}" << "\n"
         print_good("#{@users[i]}:#{@hashes[i]}")
-        end 
+        end
 
 
- #Woot we got loot.
-        loot_name     = "brocade.hashes"
-        loot_type     = "text/plain"
-        loot_filename = "brocade_hashes.text"
-        loot_desc     = "Brodace username and password hashes"
-        p = store_loot(loot_name, loot_type, datastore['RHOST'], credinfo , loot_filename, loot_desc)
-      
+     #Woot we got loot.
+     loot_name     = "brocade.hashes"
+     loot_type     = "text/plain"
+     loot_filename = "brocade_hashes.text"
+     loot_desc     = "Brodace username and password hashes"
+     p = store_loot(loot_name, loot_type, datastore['RHOST'], credinfo , loot_filename, loot_desc)
+
      print_status("Credentials saved in: #{p.to_s}")
      rescue ::SNMP::UnsupportedVersion
      rescue ::SNMP::RequestTimeout
