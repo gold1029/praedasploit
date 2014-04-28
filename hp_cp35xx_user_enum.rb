@@ -43,7 +43,7 @@ class Metasploit3 < Msf::Auxiliary
     
     print_status("Attempting to enumerate usernames from: #{rhost}")
 
-    jobs = get_number_of_jobs(rhost) 
+    jobs = get_number_of_jobs(rhost)
     return if jobs.nil?
 
     users = get_usernames(jobs)
@@ -76,7 +76,6 @@ class Metasploit3 < Msf::Auxiliary
           'method'    => 'GET'
         },datastore['TIMEOUT'].to_i)
 
-   
       rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
       print_error("#{rhost}:#{rport} - Connection failed.")
       return
@@ -140,5 +139,3 @@ class Metasploit3 < Msf::Auxiliary
     return usernames.uniq!
   end
 end
-
-
