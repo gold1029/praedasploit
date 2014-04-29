@@ -6,7 +6,6 @@
 
 require 'rex/proto/http'
 require 'msf/core'
-require 'pry-debugger'
 
 
 class Metasploit3 < Msf::Auxiliary
@@ -114,7 +113,6 @@ class Metasploit3 < Msf::Auxiliary
       xml_doc.xpath("//To").each do | val|
         usernames << val.text.split('@')[0]
       end
-      binding.pry
       return usernames.uniq
   end
 end
