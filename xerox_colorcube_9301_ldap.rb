@@ -12,7 +12,6 @@ class Metasploit3 < Msf::Auxiliary
   include Msf::Exploit::Remote::HttpClient
   include Msf::Exploit::Remote::TcpServer
   include Msf::Auxiliary::Report
-  include Msf::Auxiliary::Scanner
   
 
   def initialize(info={})
@@ -140,7 +139,6 @@ class Metasploit3 < Msf::Auxiliary
 
   def on_client_data(client)
     $data = client.get_once
-    puts @data
     client.stop
   end
 
