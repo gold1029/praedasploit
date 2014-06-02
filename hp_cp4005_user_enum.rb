@@ -79,12 +79,10 @@ class Metasploit3 < Msf::Auxiliary
       end
 
       html_body = ::Nokogiri::HTML(res.body)
-      data_to_parse_for_jobs = html_body.xpath('/html/body/div/table/tr/td/div/div/div/table/tr/td/div/div')
-      
+      data_to_parse_for_jobs = html_body.xpath('//*[@id="Text6"]')
       #check to see if the number of jobs is empty. If so return zero my friend.
       unless data_to_parse_for_jobs.empty?
-        number_of_jobs = data_to_parse_for_jobs[2].text.scan(/of\s(\d*?)\)/)
-        return number_of_jobs[0]
+        return data_to_parse_for_jobs.text
       end
 
       return number_of_jobs = 0
