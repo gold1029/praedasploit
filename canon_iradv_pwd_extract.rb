@@ -17,8 +17,16 @@ class Metasploit3 < Msf::Auxiliary
   def initialize(info={})
     super(update_info(info,
       'Name'           => 'Canon IR-Adv Password Extractor',
-      'Description'    => %{
-        This module will extract the passwords from address books on various Canon IR-Adv mfp devices .
+      'Description'    => %q{
+        This module will extract the passwords from address books on various Canon IR-Adv mfp devices.
+        Tested models:
+        iR-ADV C2030,
+        iR-ADV 4045,
+        iR-ADV C5030,
+        iR-ADV C5235,
+        iR-ADV C5240,
+        iR-ADV 6055,
+        iR-ADV C7065
       },
       'Author'         =>
         [
@@ -39,13 +47,6 @@ class Metasploit3 < Msf::Auxiliary
 
       ], self.class)
   end
-
-# tested against
-  # iR-ADV C7065
-  # iR-ADV 6055
-  # iR-ADV C5240
-  # iR-ADV C5030
-  # iR-ADV C2030L
 
 # Time to start the fun
   def run_host(ip)

