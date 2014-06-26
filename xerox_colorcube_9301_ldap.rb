@@ -42,7 +42,6 @@ class Metasploit3 < Msf::Auxiliary
   def run_host(ip)
     print_status("Attempting to extract LDAP username and password for the host at #{rhost}")
     status = login
-    binding.pry
     return unless status
 
     status = get_ldap_server_info
