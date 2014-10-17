@@ -42,13 +42,14 @@ class Metasploit3 < Msf::Auxiliary
 
     users = get_usernames(jobs)
     return if users.nil?
-    
+
     usernames = ""
-    
+
     unless users.blank?
-      users.each do |user|
+      users.each do | user |
         usernames << user << "\n"
       end
+    end
 
       #Woot we got usernames so lets save them.
       print_good( "Found the following users: #{users}")
@@ -58,7 +59,11 @@ class Metasploit3 < Msf::Auxiliary
       loot_desc     = "HP CP Username Harvester"
       p = store_loot(loot_name, loot_type, datastore['RHOST'], usernames , loot_filename, loot_desc)
       print_status("Credentials saved in: #{p.to_s}")
+
+    users.each do | user |
+       register_creds('HP-HTTP', rhost, '80', user, "")
     end
+
   end
 
   def get_number_of_jobs(rhost)
@@ -72,7 +77,7 @@ class Metasploit3 < Msf::Auxiliary
       print_error("#{rhost}:#{rport} - Connection failed.")
       return :abort
     end
-    
+
      if res == nil
         print_error("#{rhost}:#{rport} - Connection failed.")
         return
@@ -119,8 +124,39 @@ class Metasploit3 < Msf::Auxiliary
           usernames << line.content.strip
         end
       end
-      pages -= 100 
+      pages -= 100
     end
-    return usernames.uniq!
+    return usernames.uniq
   end
+
+  def register_creds (service_name, remote_host, remote_port, username, password)
+    credential_data = {
+       origin_type: :service,
+       module_fullname: self.fullname,
+       workspace_id: myworkspace.id,
+       private_data: password,
+       username: username,
+       }
+
+    service_data = {
+      address: remote_host,
+      port: remote_port,
+      service_name: service_name,
+      protocol: 'tcp',
+      workspace_id: myworkspace_id
+      }
+
+    credential_data.merge!(service_data)
+    credential_core = create_credential(credential_data)
+
+    login_data = {
+      core: credential_core,
+      status: Metasploit::Model::Login::Status::UNTRIED,
+      workspace_id: myworkspace_id
+    }
+
+    login_data.merge!(service_data)
+    create_credential_login(login_data)
+  end
+
 end
